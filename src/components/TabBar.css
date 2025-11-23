@@ -1,0 +1,61 @@
+.tab-bar {
+  height: 45px;
+  background: #192734;
+  border-top: 1px solid #38444d;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 0;
+}
+
+.tab-bar-scroll {
+  display: flex;
+  height: 100%;
+  min-width: 100%;
+  width: max-content;
+}
+
+.tab-item {
+  flex: 0 0 auto;
+  padding: 9px 18px;
+  background: none;
+  border: none;
+  color: #8899a6;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  border-bottom: 3px solid transparent;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-item:hover {
+  background: #22303c;
+  color: #ffffff;
+}
+
+.tab-item.active {
+  color: #1da1f2;
+  border-bottom-color: #1da1f2;
+}
+
+/* スクロールバーのスタイル */
+.tab-bar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.tab-bar::-webkit-scrollbar-track {
+  background: #192734;
+}
+
+.tab-bar::-webkit-scrollbar-thumb {
+  background: #38444d;
+  border-radius: 2px;
+}
+
+.tab-bar::-webkit-scrollbar-thumb:hover {
+  background: #8899a6;
+}
+

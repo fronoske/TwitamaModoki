@@ -1,0 +1,23 @@
+/**
+ * Content Script用のスタイル
+ */
+
+/* Xの既存のコンテンツを隠す */
+body.twitama-modoki-active {
+  overflow: hidden;
+}
+
+body.twitama-modoki-active > *:not(#twitama-modoki-root) {
+  display: none !important;
+}
+
+/* TwitamaModokiのルート要素 */
+#twitama-modoki-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 999999;
+}
+

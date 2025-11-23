@@ -1,0 +1,39 @@
+{
+  "name": "twitama-modoki",
+  "version": "0.1.0",
+  "description": "ツイタマ風のモバイル特化X（旧Twitter）クライアント Chrome拡張機能",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "node scripts/update-version.js development && tsc && vite build --mode development && node -e \"require('fs').rmSync('dist/.vite', {recursive:true, force:true})\" && cd dist && 7za a -tzip TwitamaModoki-dev.zip * && cd ..",
+    "build:prod": "node scripts/update-version.js production && tsc && vite build --mode production",
+    "watch": "vite build --watch --mode development",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@types/hammerjs": "^2.0.46",
+    "hammerjs": "^2.0.8",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "swiper": "^11.0.5",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.2.1",
+    "@types/chrome": "^0.0.253",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.8"
+  }
+}

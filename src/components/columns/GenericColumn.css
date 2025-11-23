@@ -1,0 +1,87 @@
+.generic-column {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* フローティングスクロールボタン */
+.floating-scroll-buttons {
+  position: absolute;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.5s ease-out;
+}
+
+.floating-scroll-buttons.fading {
+  opacity: 0;
+}
+
+.floating-scroll-buttons.right {
+  right: 6px;
+  left: auto;
+}
+
+.floating-scroll-buttons.left {
+  left: 6px;
+  right: auto;
+}
+
+.scroll-button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  position: relative;
+}
+
+.scroll-button:hover {
+  background: rgba(0, 0, 0, 0.85);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+}
+
+.scroll-button:active {
+  transform: scale(0.95);
+}
+
+/* 上スクロールボタン：矢印の上に横棒 */
+.scroll-to-top::before {
+  content: "";
+  width: 20px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 1px;
+  position: absolute;
+  top: 10px;
+}
+
+/* 下スクロールボタン：矢印の下に横棒 */
+.scroll-to-bottom::after {
+  content: "";
+  width: 20px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 1px;
+  position: absolute;
+  bottom: 10px;
+}
+
+
