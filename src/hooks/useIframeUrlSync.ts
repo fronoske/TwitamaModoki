@@ -29,7 +29,7 @@ interface UseIframeUrlSyncOptions {
  * @param iframeRef - iframeへのRef
  * @param options - オプション
  */
-export function useIframeUrlSync(iframeRef: RefObject<HTMLIFrameElement>, options: UseIframeUrlSyncOptions) {
+export function useIframeUrlSync(iframeRef: RefObject<HTMLIFrameElement | null>, options: UseIframeUrlSyncOptions) {
     const { onUrlChange, columnId } = options;
     const { columns } = useAppStore(); // カラム情報を取得
     const lastUrlRef = useRef<string>("");

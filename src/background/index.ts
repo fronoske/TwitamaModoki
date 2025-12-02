@@ -79,7 +79,7 @@ function setupRateLimitMonitor() {
         (details) => {
             const category = detectRateLimitCategory(details.url);
             if (!category) {
-                return;
+                return undefined;
             }
 
             const limit = getHeaderValue(details.responseHeaders, "x-rate-limit-limit");
@@ -87,7 +87,7 @@ function setupRateLimitMonitor() {
             const resetAt = getHeaderValue(details.responseHeaders, "x-rate-limit-reset");
 
             if (limit === null && remaining === null && resetAt === null) {
-                return;
+                return undefined;
             }
 
             const previous = rateLimitState[category];
@@ -101,7 +101,7 @@ function setupRateLimitMonitor() {
                 previous.remaining === newRemaining &&
                 previous.resetAt === newResetAt
             ) {
-                return; // 変更なし、更新不要
+                return undefined; // 変更なし、更新不要
             }
 
             logger.log(`🔍 TwitamaModoki: レート制限更新 [${category}]`, {
@@ -119,6 +119,7 @@ function setupRateLimitMonitor() {
             };
 
             chrome.storage.local.set({ [RATE_LIMIT_STORAGE_KEY]: rateLimitState });
+            return undefined;
         },
         {
             urls: ["*://*.x.com/i/api/*", "*://*.twitter.com/i/api/*", "*://api.x.com/*", "*://api.twitter.com/*"],

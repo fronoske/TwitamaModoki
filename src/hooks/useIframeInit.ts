@@ -36,7 +36,7 @@ interface IframeInitOptions {
  * @param iframeRef - iframeへのRef
  * @param options - 初期化オプション
  */
-export function useIframeInit(iframeRef: RefObject<HTMLIFrameElement>, options: IframeInitOptions = {}) {
+export function useIframeInit(iframeRef: RefObject<HTMLIFrameElement | null>, options: IframeInitOptions = {}) {
     const { customCss = "" } = options;
     const { display } = useAppStore();
 
