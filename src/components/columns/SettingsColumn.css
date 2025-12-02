@@ -169,7 +169,7 @@
   margin-bottom: 8px;
   gap: 12px;
   position: relative;
-  touch-action: none;
+  touch-action: auto;
 }
 
 .column-drag-handle {
@@ -181,6 +181,8 @@
   width: 24px;
   flex-shrink: 0;
   user-select: none;
+  cursor: grab;
+  touch-action: none;
 }
 
 .column-drag-handle:active {

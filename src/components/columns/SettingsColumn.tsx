@@ -54,9 +54,18 @@ export function SettingsColumn() {
     const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
     // dnd-kitのセンサー設定
+    // ハンドル要素のみをドラッグ可能にするため、activationConstraintを設定
     const sensors = useSensors(
-        useSensor(MouseSensor),
-        useSensor(PointerSensor),
+        useSensor(MouseSensor, {
+            activationConstraint: {
+                distance: 0,
+            },
+        }),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 0,
+            },
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
@@ -1047,8 +1056,8 @@ function SortableColumnItem({
     };
 
     return (
-        <div ref={setNodeRef} style={style} className="column-item swiper-no-swiping" {...attributes} {...listeners}>
-            <div className="column-drag-handle">≡</div>
+        <div ref={setNodeRef} style={style} className="column-item swiper-no-swiping" data-id={column.id}>
+            <div className="column-drag-handle" {...attributes} {...listeners} data-handle>≡</div>
             {isEditing ? (
                 <input
                     type="text"
