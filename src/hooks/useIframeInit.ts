@@ -76,7 +76,7 @@ export function useIframeInit(iframeRef: RefObject<HTMLIFrameElement | null>, op
             if (display.hideAds) {
                 css += `
           /* プロモーション（広告）を非表示 */
-          div[data-testid="cellInnerDiv"]:has([data-testid="placementTracking"]) {
+          div[data-testid="cellInnerDiv"]:has([data-testid="placementTracking"]):not(:has([data-testid="tweet"])) {
             display: none !important;
             visibility: hidden !important;
             height: 0 !important;
