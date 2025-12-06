@@ -36,6 +36,7 @@ export function GenericColumn({ columnId, currentUrl }: GenericColumnProps) {
     const { updateColumnUrl, display } = useAppStore();
     const [isScrolling, setIsScrolling] = useState(false); // スクロール中かどうか
     const [isFading, setIsFading] = useState(false);
+    const [isImageModalOpen, setIsImageModalOpen] = useState(false); // 画像モーダル表示中かどうか
     const [iframeUrl, setIframeUrl] = useState(currentUrl); // iframe内の実際のURLを追跡
     const scrollTimeoutRef = useRef<number | null>(null);
     const fadeTimeoutRef = useRef<number | null>(null);
@@ -58,6 +59,57 @@ export function GenericColumn({ columnId, currentUrl }: GenericColumnProps) {
         columnId, // カラムIDを渡す
     });
 
+    // 画像モーダル（フルスクリーン画像）が表示されているか監視
+    useEffect(() => {
+        const iframe = iframeRef.current;
+        if (!iframe) return;
+
+        let observer: MutationObserver | null = null;
+
+        const handleLoad = () => {
+            try {
+                const iframeDoc = iframe.contentWindow?.document;
+                if (!iframeDoc) return;
+
+                const updateModalState = () => {
+                    const hasModal = iframeDoc.querySelector(IMAGE_MODAL_SELECTOR) !== null;
+                    setIsImageModalOpen(hasModal);
+                };
+
+                // 初期状態を反映
+                updateModalState();
+
+                // 既存のオブザーバーがあれば停止
+                if (observer) {
+                    observer.disconnect();
+                }
+
+                // DOM変化を監視してモーダルの有無を検出
+                observer = new MutationObserver(() => {
+                    updateModalState();
+                });
+
+                if (iframeDoc.body) {
+                    observer.observe(iframeDoc.body, {
+                        childList: true,
+                        subtree: true,
+                    });
+                }
+            } catch (error) {
+                logger.error("画像モーダル監視エラー:", error);
+            }
+        };
+
+        iframe.addEventListener("load", handleLoad);
+
+        return () => {
+            iframe.removeEventListener("load", handleLoad);
+            if (observer) {
+                observer.disconnect();
+            }
+        };
+    }, []);
+
     // iframe内のスクロールイベントを監視
     useEffect(() => {
         const iframe = iframeRef.current;
@@ -71,14 +123,6 @@ export function GenericColumn({ columnId, currentUrl }: GenericColumnProps) {
                 let lastScrollTop = 0;
 
                 const handleScroll = () => {
-                    // 画像モーダルが表示されている場合はボタンを表示しない
-                    const isImageModalOpen = iframeDoc.querySelector(IMAGE_MODAL_SELECTOR) !== null;
-                    if (isImageModalOpen) {
-                        setIsScrolling(false);
-                        setIsFading(false);
-                        return;
-                    }
-
                     // 実際にスクロール位置が変化したかチェック
                     const currentScrollTop = iframeDoc.documentElement.scrollTop || iframeDoc.body.scrollTop;
                     if (Math.abs(currentScrollTop - lastScrollTop) < 5) {
@@ -181,6 +225,11 @@ export function GenericColumn({ columnId, currentUrl }: GenericColumnProps) {
 
             {/* フローティングスクロールボタン */}
             {(() => {
+                // 画像モーダル表示中はスクロールボタンを完全に非表示
+                if (isImageModalOpen) {
+                    return null;
+                }
+
                 const showTopButton = display.scrollToTopVisibility === "always" || (display.scrollToTopVisibility === "scroll-only" && isScrolling);
                 const showBottomButton = display.scrollToBottomVisibility === "always" || (display.scrollToBottomVisibility === "scroll-only" && isScrolling);
 
