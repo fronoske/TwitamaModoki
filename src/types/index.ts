@@ -67,6 +67,7 @@ export interface DisplayConfig {
     hidePostMenuButton: boolean; // 投稿の三点リーダーを非表示
     hideRecommendedUsers: boolean; // 「おすすめユーザー」を非表示
     hideVerificationUpsell: boolean; // 「～さんはまだ認証されていません」を非表示
+    hideVerifiedPosts: boolean; // ポスト画面での認証済みアカウントのポストを非表示
     bottomBannerMode: "always" | "home-only" | "never"; // 下部バナー表示モード
 }
 
@@ -145,6 +146,7 @@ export const DEFAULT_CONFIG: AppConfig = {
         hidePostMenuButton: true,
         hideRecommendedUsers: false,
         hideVerificationUpsell: false,
+        hideVerifiedPosts: false,
         bottomBannerMode: "home-only",
     },
 };

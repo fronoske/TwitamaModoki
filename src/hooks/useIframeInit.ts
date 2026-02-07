@@ -96,6 +96,17 @@ export function useIframeInit(iframeRef: RefObject<HTMLIFrameElement | null>, op
           `;
             }
 
+            // 認証済みアカウントのポスト非表示（ポスト詳細画面のみ）
+            // body.twitama-post-detail クラスは MutationObserver で動的に付与される
+            if (display.hideVerifiedPosts) {
+                css += `
+          /* ポスト詳細画面でのみ認証済みアカウントのポストを非表示 */
+          body.twitama-post-detail article[data-testid="tweet"]:has(div[data-testid="User-Name"] svg[data-testid="icon-verified"]) {
+            display: none !important;
+          }
+          `;
+            }
+
             // 【Listカラム専用】バナーとヘッダーを非表示
             if (display.hideListHeaders && isListColumn(currentUrl)) {
                 css += `
@@ -236,6 +247,7 @@ export function useIframeInit(iframeRef: RefObject<HTMLIFrameElement | null>, op
             display.hideListHeaders,
             display.hidePostMenuButton,
             display.hideVerificationUpsell,
+            display.hideVerifiedPosts,
             display.bottomBannerMode,
             customCss,
         ]
@@ -356,6 +368,80 @@ export function useIframeInit(iframeRef: RefObject<HTMLIFrameElement | null>, op
             logger.log("⏳ TwitamaModoki: iframe 未ロード（load イベントで処理されます）");
         }
     }, [iframeRef, display.fontSize, applyStyles]);
+
+    // 【ポスト詳細画面検出】MutationObserverで <h2 role="heading"> 内の <span>ポスト</span> を監視し、
+    // body に twitama-post-detail クラスを動的に付与/除去する
+    useEffect(() => {
+        const iframe = iframeRef.current;
+        if (!iframe) return;
+
+        let observer: MutationObserver | null = null;
+
+        const handleLoad = () => {
+            try {
+                const iframeDoc = iframe.contentWindow?.document;
+                if (!iframeDoc) return;
+
+                const updatePostDetailClass = () => {
+                    // <h2 role="heading"> の子孫 <span> に「ポスト」というテキストがあるかチェック
+                    const headings = iframeDoc.querySelectorAll('h2[role="heading"]');
+                    let isPostDetail = false;
+                    for (const heading of headings) {
+                        const spans = heading.querySelectorAll("span");
+                        for (const span of spans) {
+                            if (span.textContent?.trim() === "ポスト") {
+                                isPostDetail = true;
+                                break;
+                            }
+                        }
+                        if (isPostDetail) break;
+                    }
+
+                    const body = iframeDoc.body;
+                    if (!body) return;
+
+                    if (isPostDetail && !body.classList.contains("twitama-post-detail")) {
+                        body.classList.add("twitama-post-detail");
+                        logger.log("📌 TwitamaModoki: ポスト詳細画面を検出 → twitama-post-detail クラス付与");
+                    } else if (!isPostDetail && body.classList.contains("twitama-post-detail")) {
+                        body.classList.remove("twitama-post-detail");
+                        logger.log("📌 TwitamaModoki: ポスト詳細画面を離脱 → twitama-post-detail クラス除去");
+                    }
+                };
+
+                // 初期状態を反映
+                updatePostDetailClass();
+
+                // 既存のオブザーバーがあれば停止
+                if (observer) {
+                    observer.disconnect();
+                }
+
+                // DOM変化を監視してポスト詳細画面かどうかを検出
+                observer = new MutationObserver(() => {
+                    updatePostDetailClass();
+                });
+
+                if (iframeDoc.body) {
+                    observer.observe(iframeDoc.body, {
+                        childList: true,
+                        subtree: true,
+                    });
+                }
+            } catch (error) {
+                logger.error("TwitamaModoki: ポスト詳細画面検出エラー:", error);
+            }
+        };
+
+        iframe.addEventListener("load", handleLoad);
+
+        return () => {
+            iframe.removeEventListener("load", handleLoad);
+            if (observer) {
+                observer.disconnect();
+            }
+        };
+    }, [iframeRef]);
 }
 
 class AbsoluteTimeFormatter {

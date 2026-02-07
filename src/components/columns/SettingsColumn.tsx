@@ -734,6 +734,17 @@ export function SettingsColumn() {
                         <label>
                             <input
                                 type="checkbox"
+                                checked={display.hideVerifiedPosts}
+                                onChange={(e) => setDisplayConfig({ hideVerifiedPosts: e.target.checked })}
+                            />
+                            <span>ポスト画面での認証済みアカウント</span>
+                        </label>
+                    </div>
+
+                    <div className="setting-item">
+                        <label>
+                            <input
+                                type="checkbox"
                                 checked={display.hideRecommendedUsers}
                                 onChange={(e) => setDisplayConfig({ hideRecommendedUsers: e.target.checked })}
                             />
