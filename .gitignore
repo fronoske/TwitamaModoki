@@ -29,6 +29,7 @@ dist-ssr
 # Chrome extension
 *.crx
 *.pem
+*.zip
 
 # ビルド時に生成されるファイル（テンプレートから生成）
 src/manifest.json

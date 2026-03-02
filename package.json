@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/update-version.js development && tsc && vite build --mode development && node -e \"require('fs').rmSync('dist/.vite', {recursive:true, force:true})\" && cd dist && 7za a -tzip TwitamaModoki-dev.zip * && cd ..",
-    "build:prod": "node scripts/update-version.js production && tsc && vite build --mode production",
+    "build": "node scripts/update-version.js development && tsc && vite build --mode development && node scripts/zip-dist.js dev",
+    "build:prod": "node scripts/update-version.js production && tsc && vite build --mode production && node scripts/zip-dist.js",
     "watch": "vite build --watch --mode development",
     "preview": "vite preview",
     "type-check": "tsc --noEmit"
