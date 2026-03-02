@@ -101,7 +101,7 @@ export function useIframeInit(iframeRef: RefObject<HTMLIFrameElement | null>, op
             if (display.hideVerifiedPosts) {
                 css += `
           /* ポスト詳細画面でのみ認証済みアカウントのポストを非表示 */
-          body.twitama-post-detail article[data-testid="tweet"]:has(div[data-testid="User-Name"] svg[data-testid="icon-verified"]) {
+          body.twitama-post-detail article[data-testid="tweet"][tabindex="0"]:has(div[data-testid="User-Name"] svg[data-testid="icon-verified"]) {
             display: none !important;
           }
           `;
