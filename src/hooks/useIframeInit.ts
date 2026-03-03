@@ -321,10 +321,12 @@ export function useIframeInit(iframeRef: RefObject<HTMLIFrameElement | null>, op
                         logger.log("🖼️ TwitamaModoki: 画像モーダル表示中");
 
                         // 下スワイプでモーダルを閉じる
-                        if (e.type === "swipedown") {
-                            logger.log("⬇️ TwitamaModoki: 下スワイプ検出 - モーダルを閉じます");
-                            iframe.contentWindow?.history.back();
-                        }
+                        // ※ X.comのネイティブ swipe-to-dismiss が既にhistory.back()を行うため、
+                        //    ここで追加呼び出しすると二重にback()されリロードが発生する
+                        // if (e.type === "swipedown") {
+                        //     logger.log("⬇️ TwitamaModoki: 下スワイプ検出 - モーダルを閉じます");
+                        //     iframe.contentWindow?.history.back();
+                        // }
                         // 画像モーダル表示時は横スワイプをiframe内で処理（カラム切り替えしない）
                         // → 何もしない（イベントを親に送信しない）
                         return;
