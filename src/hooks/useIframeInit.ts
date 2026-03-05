@@ -664,10 +664,10 @@ class QuoteButtonInjector {
 
             buttonContainer.appendChild(button);
 
-            // 共有ボタン（最後の子要素）の前に挿入
-            const lastChild = actionBar.lastElementChild;
-            if (lastChild) {
-                actionBar.insertBefore(buttonContainer, lastChild);
+            // 一番左（最初の子要素の前）に挿入
+            const firstChild = actionBar.firstElementChild;
+            if (firstChild) {
+                actionBar.insertBefore(buttonContainer, firstChild);
             } else {
                 actionBar.appendChild(buttonContainer);
             }
