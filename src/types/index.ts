@@ -189,7 +189,7 @@ export function shouldRecordUrl(url: string): boolean {
             /^\/notifications$/, // 通知
             /^\/messages(\/.*)?$/, // DM
             /^\/search$/, // 検索
-            /^\/i\/lists\/.+$/, // リスト
+            /^\/i\/lists\/\d+$/, // リスト（/i/lists/{数字のlistId} のみ）
             /^\/explore(\/.*)?$/, // Explore
             /^\/i\/bookmarks$/, // ブックマーク
             /^\/i\/communities\/.+$/, // コミュニティ

@@ -25,7 +25,8 @@ export function getColumnTypeFromUrl(url: string): ColumnType {
         if (pathname === "/search") return "search";
 
         // リスト（/i/lists/add_member などの管理画面は除外）
-        if (pathname.match(/^\/i\/lists\/.+$/) && !pathname.match(/^\/i\/lists\/add_member/)) return "list";
+        // リスト（/i/lists/{数字のlistId} のみ、add_member等は除外）
+        if (pathname.match(/^\/i\/lists\/\d+$/)) return "list";
 
         // Explore
         if (pathname === "/explore" || pathname.startsWith("/explore/")) return "explore";
