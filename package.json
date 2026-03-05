@@ -1,6 +1,6 @@
 {
   "name": "twitama-modoki",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "ツイタマ風のモバイル特化X（旧Twitter）クライアント Chrome拡張機能",
   "type": "module",
   "scripts": {

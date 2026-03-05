@@ -51,7 +51,6 @@ export function SettingsColumn() {
         isRetweet: undefined as boolean | undefined,
         hasMedia: undefined as boolean | undefined,
     });
-    const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
     // dnd-kitのセンサー設定
     // ハンドル要素のみをドラッグ可能にするため、activationConstraintを設定
@@ -948,63 +947,19 @@ export function SettingsColumn() {
 
                 <section className="settings-section">
                     <h3>設定管理</h3>
-                    <div style={{ position: "relative" }}>
-                        <button className="btn-secondary" onClick={() => setShowSettingsMenu(!showSettingsMenu)}>
-                            選択してください ▼
+                    <div className="settings-buttons">
+                        <button className="btn-secondary" onClick={handleExport}>
+                            📤 エクスポート
                         </button>
-                        {showSettingsMenu && (
-                            <>
-                                <div
-                                    style={{
-                                        position: "fixed",
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        zIndex: 999,
-                                    }}
-                                    onClick={() => setShowSettingsMenu(false)}
-                                />
-                                <div className="settings-dropdown-menu">
-                                    <button
-                                        className="settings-menu-item"
-                                        onClick={() => {
-                                            handleExport();
-                                            setShowSettingsMenu(false);
-                                        }}
-                                    >
-                                        <span>📤</span>
-                                        <span>エクスポート</span>
-                                    </button>
-                                    <button
-                                        className="settings-menu-item"
-                                        onClick={() => {
-                                            handleImport();
-                                            setShowSettingsMenu(false);
-                                        }}
-                                    >
-                                        <span>📥</span>
-                                        <span>インポート</span>
-                                    </button>
-                                    <button
-                                        className="settings-menu-item settings-menu-item-danger"
-                                        onClick={() => {
-                                            handleClearSettings();
-                                            setShowSettingsMenu(false);
-                                        }}
-                                    >
-                                        <span>🗑️</span>
-                                        <span>設定リセット</span>
-                                    </button>
-                                </div>
-                            </>
-                        )}
+                        <button className="btn-secondary" onClick={handleImport}>
+                            📥 インポート
+                        </button>
+                        <button className="btn-danger" onClick={handleClearSettings}>
+                            🗑️ 設定リセット
+                        </button>
                     </div>
                     {/* 非表示のファイル入力 */}
                     <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileChange} style={{ display: "none" }} />
-                    <p className="help-text">エクスポート：設定をJSONファイルとして保存</p>
-                    <p className="help-text">インポート：JSONファイルから設定を復元</p>
-                    <p className="help-text warning-text">設定リセット：⚠️TwitamaModokiのすべての設定を削除</p>
                 </section>
 
                 {/* レート制限情報 */}
