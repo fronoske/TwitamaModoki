@@ -229,6 +229,12 @@ export function useIframeInit(iframeRef: RefObject<HTMLIFrameElement | null>, op
             color: rgb(113, 118, 123) !important;
             font-size: inherit !important;
           }
+
+          /* 引用ボタンのホバー効果 */
+          [data-twitama-modoki-quote-btn] a:hover {
+            color: rgb(29, 155, 240) !important;
+            background: rgba(29, 155, 240, 0.1) !important;
+          }
         `;
             logger.log("✨ TwitamaModoki: ポストヘッダーをカスタマイズ");
 
@@ -258,6 +264,7 @@ export function useIframeInit(iframeRef: RefObject<HTMLIFrameElement | null>, op
         if (!iframe) return;
 
         let cleanupAbsoluteTime: (() => void) | null = null;
+        let cleanupQuoteButtons: (() => void) | null = null;
 
         const handleLoad = () => {
             logger.log("TwitamaModoki: iframe 読み込み完了");
@@ -276,6 +283,11 @@ export function useIframeInit(iframeRef: RefObject<HTMLIFrameElement | null>, op
                 cleanupAbsoluteTime?.();
                 const absoluteTimeFormatter = new AbsoluteTimeFormatter(iframeDoc);
                 cleanupAbsoluteTime = absoluteTimeFormatter.start();
+
+                // 引用ボタン注入を開始
+                cleanupQuoteButtons?.();
+                const quoteButtonInjector = new QuoteButtonInjector(iframeDoc);
+                cleanupQuoteButtons = quoteButtonInjector.start();
 
                 // フィルタリング処理を開始
                 const { filters, display: currentDisplay } = useAppStore.getState();
@@ -350,6 +362,7 @@ export function useIframeInit(iframeRef: RefObject<HTMLIFrameElement | null>, op
         return () => {
             iframe.removeEventListener("load", handleLoad);
             cleanupAbsoluteTime?.();
+            cleanupQuoteButtons?.();
         };
     }, [iframeRef, applyStyles]);
 
@@ -585,6 +598,107 @@ class AbsoluteTimeFormatter {
         const minutes = pad(date.getMinutes());
 
         return `${yearPart}${month}/${day}(${dayOfWeek}) ${hours}:${minutes}`;
+    }
+}
+
+/**
+ * 各ポストのアクションバーに「引用を表示」ボタンを注入する
+ */
+class QuoteButtonInjector {
+    private observer: MutationObserver | null = null;
+    private readonly processedAttr = "data-twitama-modoki-quotes";
+
+    constructor(private doc: Document) {}
+
+    public start(): () => void {
+        this.injectButtons();
+
+        if (this.doc.body) {
+            this.observer = new MutationObserver(() => {
+                this.injectButtons();
+            });
+            this.observer.observe(this.doc.body, {
+                childList: true,
+                subtree: true,
+            });
+        }
+
+        return () => {
+            this.observer?.disconnect();
+            this.observer = null;
+        };
+    }
+
+    private injectButtons() {
+        // 未処理のアクションバーを取得（role="group" を持つ div）
+        const actionBars = this.doc.querySelectorAll<HTMLElement>(
+            `article[data-testid="tweet"] div[role="group"]:not([${this.processedAttr}])`
+        );
+
+        actionBars.forEach((actionBar) => {
+            // ポストのURLを取得
+            const postUrl = this.getPostUrl(actionBar);
+            if (!postUrl) {
+                return;
+            }
+
+            const quotesUrl = `${postUrl}/quotes`;
+
+            // 引用ボタンのコンテナを作成（共有ボタンの左に配置）
+            const buttonContainer = this.doc.createElement("div");
+            buttonContainer.setAttribute("data-twitama-modoki-quote-btn", "true");
+            buttonContainer.style.cssText = "display: flex; align-items: center;";
+
+            const button = this.doc.createElement("a");
+            button.href = quotesUrl;
+            button.setAttribute("role", "link");
+            button.setAttribute("aria-label", "引用を表示");
+            button.style.cssText = `
+                display: flex; align-items: center; justify-content: center;
+                padding: 4px 8px; cursor: pointer; text-decoration: none;
+                color: rgb(83, 100, 113); font-size: 13px; font-weight: 700;
+                border-radius: 9999px; transition: all 0.2s;
+            `;
+
+            button.textContent = "QT";
+
+            buttonContainer.appendChild(button);
+
+            // 共有ボタン（最後の子要素）の前に挿入
+            const lastChild = actionBar.lastElementChild;
+            if (lastChild) {
+                actionBar.insertBefore(buttonContainer, lastChild);
+            } else {
+                actionBar.appendChild(buttonContainer);
+            }
+
+            // 処理済みマーク
+            actionBar.setAttribute(this.processedAttr, "1");
+        });
+    }
+
+    private getPostUrl(actionBar: HTMLElement): string | null {
+        // article要素を取得
+        const article = actionBar.closest('article[data-testid="tweet"]');
+        if (!article) return null;
+
+        // アナリティクスリンクからURLを取得（/status/{id}/analytics）
+        const analyticsLink = actionBar.querySelector<HTMLAnchorElement>('a[href*="/status/"][href$="/analytics"]');
+        if (analyticsLink) {
+            const href = analyticsLink.getAttribute("href");
+            if (href) {
+                // /analytics を除去してポストURLを取得
+                return href.replace(/\/analytics$/, "");
+            }
+        }
+
+        // フォールバック: article内のステータスリンクから取得
+        const statusLink = article.querySelector<HTMLAnchorElement>('a[href*="/status/"] time')?.closest<HTMLAnchorElement>('a[href*="/status/"]');
+        if (statusLink) {
+            return statusLink.getAttribute("href");
+        }
+
+        return null;
     }
 }
 
