@@ -64,6 +64,34 @@ export function useIframeInit(iframeRef: RefObject<HTMLIFrameElement | null>, op
             -webkit-user-select: text !important;
             touch-action: auto !important;
           }
+
+          /* TwitamaModokiから全画面表示したときはXのヘッダーを隠す */
+          body.twitama-media-fullscreen ${BANNER_HEADER_SELECTOR} {
+            display: none !important;
+          }
+
+          .twitama-media-fullscreen-button {
+            position: fixed;
+            top: max(12px, env(safe-area-inset-top));
+            right: max(12px, env(safe-area-inset-right));
+            z-index: 2147483647;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 9999px;
+            background: rgba(15, 20, 25, 0.8);
+            color: #ffffff;
+            font: 600 13px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+          }
+
+          .twitama-media-fullscreen-button:hover,
+          .twitama-media-fullscreen-button:focus-visible {
+            background: rgba(39, 44, 48, 0.95);
+            outline: 2px solid #1d9bf0;
+            outline-offset: 2px;
+          }
           
           /* テキスト要素のフォントサイズとline-heightを変更 */
           ${TEXT_SELECTORS.map((selector) => `${selector}`).join(",\n          ")} {

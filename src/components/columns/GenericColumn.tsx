@@ -9,6 +9,7 @@
 
 import { useRef, useCallback, useState, useEffect } from "react";
 import { useIframeInit } from "@/hooks/useIframeInit";
+import { useMediaFullscreen } from "@/hooks/useMediaFullscreen";
 import { useIframeUrlSync } from "@/hooks/useIframeUrlSync";
 import { useAppStore } from "@/store";
 import { IMAGE_MODAL_SELECTOR } from "@/config/xSelectors";
@@ -42,6 +43,7 @@ export function GenericColumn({ columnId, currentUrl }: GenericColumnProps) {
 
     // iframe初期化（広告非表示、カスタムCSS注入、アカウント名検出）
     useIframeInit(iframeRef, { hideAds: true });
+    useMediaFullscreen(iframeRef);
 
     // URL変更を監視して自動保存
     const handleUrlChange = useCallback(

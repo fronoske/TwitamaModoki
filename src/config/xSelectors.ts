@@ -55,6 +55,15 @@ export const BANNER_HEADER_SELECTOR = 'header[role="banner"]';
 export const IMAGE_MODAL_SELECTOR = 'div[data-testid="swipe-to-dismiss"]';
 
 /**
+ * 画像・動画の拡大表示を含むレイヤーのセレクタ
+ *
+ * インライン動画や投稿画面の添付メディアは対象にせず、#layers 以下に
+ * 表示された画像モーダルまたは動画プレイヤーだけを対象にします。
+ */
+export const MEDIA_VIEWER_SELECTOR =
+    'div#layers > div:has(div[data-testid="swipe-to-dismiss"]), div#layers > div:has([data-testid="videoPlayer"])';
+
+/**
  * フォントサイズを変更する対象のテキスト要素セレクタ
  *
  * ⚠️ Xのレイアウト変更時や、新たにサイズ変更したい要素を見つけた場合は、

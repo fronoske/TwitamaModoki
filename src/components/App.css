@@ -4,6 +4,7 @@
   left: 0;
   width: 100%;
   height: 100%;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background: #15202b;
@@ -18,6 +19,7 @@
   left: 0;
   width: 100%;
   height: 100%;
+  height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
