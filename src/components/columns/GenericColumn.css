@@ -4,6 +4,38 @@
   height: 100%;
 }
 
+.media-fullscreen-button {
+  position: absolute;
+  top: 44px;
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 2147483647;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 9999px;
+  background: rgba(15, 20, 25, 0.8);
+  color: #ffffff;
+  font: 600 13px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.media-fullscreen-button:hover,
+.media-fullscreen-button:focus-visible {
+  background: rgba(39, 44, 48, 0.95);
+  outline: 2px solid #1d9bf0;
+  outline-offset: 2px;
+}
+
+body.twitama-media-fullscreen .rate-limit-panel,
+body.twitama-media-fullscreen .tab-bar {
+  display: none;
+}
+
+body.twitama-media-fullscreen .media-fullscreen-button {
+  top: max(12px, env(safe-area-inset-top));
+}
+
 /* フローティングスクロールボタン */
 .floating-scroll-buttons {
   position: absolute;

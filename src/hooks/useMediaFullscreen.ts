@@ -1,18 +1,92 @@
-import { useEffect, RefObject } from "react";
-import { MEDIA_VIEWER_SELECTOR } from "@/config/xSelectors";
+import { useCallback, useEffect, useRef, useState, RefObject } from "react";
+import { IMAGE_MODAL_SELECTOR } from "@/config/xSelectors";
 import { logger } from "@/utils/logger";
 
-const BUTTON_CLASS = "twitama-media-fullscreen-button";
 const FULLSCREEN_BODY_CLASS = "twitama-media-fullscreen";
+const MEDIA_ROUTE_PATTERN = /\/status\/\d+\/(?:photo|video)\/\d+/;
+
+function hasExpandedMedia(iframeDoc: Document): boolean {
+    if (iframeDoc.querySelector(IMAGE_MODAL_SELECTOR)) return true;
+
+    const hasLayerVideo = Array.from(iframeDoc.querySelectorAll('[data-testid="videoPlayer"], video')).some((element) => element.closest("#layers"));
+    if (hasLayerVideo) return true;
+
+    return MEDIA_ROUTE_PATTERN.test(iframeDoc.location.pathname);
+}
+
+function getVideoEventTarget(event: Event): HTMLVideoElement | null {
+    const target = event.target as Element | null;
+    return target?.tagName === "VIDEO" ? (target as HTMLVideoElement) : null;
+}
 
 /**
- * X の画像・動画ビューアーに全画面表示ボタンを追加する。
+ * X の画像・動画ビューアーを監視し、トップページの全画面表示を制御する。
  */
 export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null>) {
+    const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const fullscreenOwnerRef = useRef<Document | null>(null);
+    const mediaDocumentRef = useRef<Document | null>(null);
+
+    const clearFullscreenState = useCallback(() => {
+        const outerDoc = fullscreenOwnerRef.current;
+        const mediaDoc = mediaDocumentRef.current;
+
+        fullscreenOwnerRef.current = null;
+        mediaDocumentRef.current = null;
+        outerDoc?.body.classList.remove(FULLSCREEN_BODY_CLASS);
+        mediaDoc?.body.classList.remove(FULLSCREEN_BODY_CLASS);
+        setIsFullscreen(false);
+    }, []);
+
+    const exitFullscreen = useCallback(() => {
+        const outerDoc = fullscreenOwnerRef.current;
+        if (!outerDoc) return;
+
+        const shouldExit = outerDoc.fullscreenElement === outerDoc.documentElement;
+        clearFullscreenState();
+
+        if (shouldExit) {
+            void outerDoc.exitFullscreen().catch((error: unknown) => {
+                logger.warn("TwitamaModoki: メディアの全画面表示を解除できませんでした:", error);
+            });
+        }
+    }, [clearFullscreenState]);
+
+    const toggleFullscreen = useCallback(() => {
+        const iframe = iframeRef.current;
+        const iframeDoc = iframe?.contentWindow?.document;
+        const outerDoc = iframe?.ownerDocument;
+        if (!iframeDoc || !outerDoc) return;
+
+        if (fullscreenOwnerRef.current === outerDoc && outerDoc.fullscreenElement === outerDoc.documentElement) {
+            exitFullscreen();
+            return;
+        }
+
+        if (outerDoc.fullscreenElement || !outerDoc.documentElement.requestFullscreen) return;
+
+        outerDoc.documentElement
+            .requestFullscreen({ navigationUI: "hide" })
+            .then(() => {
+                if (outerDoc.fullscreenElement !== outerDoc.documentElement) return;
+
+                fullscreenOwnerRef.current = outerDoc;
+                mediaDocumentRef.current = iframeDoc;
+                outerDoc.body.classList.add(FULLSCREEN_BODY_CLASS);
+                iframeDoc.body.classList.add(FULLSCREEN_BODY_CLASS);
+                setIsFullscreen(true);
+            })
+            .catch((error: unknown) => {
+                logger.warn("TwitamaModoki: メディアを全画面表示できませんでした:", error);
+            });
+    }, [exitFullscreen, iframeRef]);
+
     useEffect(() => {
         const iframe = iframeRef.current;
         if (!iframe) return;
 
+        const outerDoc = iframe.ownerDocument;
         let cleanupDocument: (() => void) | null = null;
 
         const setupDocument = () => {
@@ -22,111 +96,59 @@ export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null
                 const iframeDoc = iframe.contentWindow?.document;
                 if (!iframeDoc?.body) return;
 
-                let fullscreenStartedByApp = false;
+                let activeVideo = Array.from(iframeDoc.querySelectorAll<HTMLVideoElement>("video")).find((video) => !video.paused && !video.ended) ?? null;
 
-                const getButtons = () => Array.from(iframeDoc.querySelectorAll<HTMLButtonElement>(`.${BUTTON_CLASS}`));
+                const syncMediaViewer = () => {
+                    const playingVideo = Array.from(iframeDoc.querySelectorAll<HTMLVideoElement>("video")).find(
+                        (video) => !video.paused && !video.ended,
+                    );
+                    if (playingVideo) activeVideo = playingVideo;
+                    if (activeVideo && (!activeVideo.isConnected || activeVideo.ended)) activeVideo = null;
 
-                const updateFullscreenUi = () => {
-                    const isAppFullscreen = fullscreenStartedByApp && iframeDoc.fullscreenElement === iframeDoc.documentElement;
-                    iframeDoc.body.classList.toggle(FULLSCREEN_BODY_CLASS, isAppFullscreen);
-
-                    const label = isAppFullscreen ? "全画面解除" : "全画面表示";
-                    getButtons().forEach((button) => {
-                        if (button.textContent !== label) button.textContent = label;
-                        button.setAttribute("aria-label", label);
-                        button.setAttribute("aria-pressed", String(isAppFullscreen));
-                    });
-
-                    if (fullscreenStartedByApp && !isAppFullscreen && !iframeDoc.fullscreenElement) {
-                        fullscreenStartedByApp = false;
-                    }
+                    const isOpen = hasExpandedMedia(iframeDoc) || activeVideo !== null;
+                    setIsMediaViewerOpen(isOpen);
+                    if (!isOpen && mediaDocumentRef.current === iframeDoc) exitFullscreen();
                 };
 
-                const exitFullscreen = () => {
-                    if (!fullscreenStartedByApp) return;
+                const handleVideoPlay = (event: Event) => {
+                    const video = getVideoEventTarget(event);
+                    if (!video) return;
 
-                    fullscreenStartedByApp = false;
-                    iframeDoc.body.classList.remove(FULLSCREEN_BODY_CLASS);
-
-                    if (iframeDoc.fullscreenElement === iframeDoc.documentElement) {
-                        void iframeDoc.exitFullscreen().catch((error: unknown) => {
-                            logger.warn("TwitamaModoki: メディアの全画面表示を解除できませんでした:", error);
-                        });
-                    }
+                    activeVideo = video;
+                    syncMediaViewer();
                 };
 
-                const handleButtonClick = (event: MouseEvent) => {
-                    event.preventDefault();
-                    event.stopPropagation();
+                const handleVideoFinished = (event: Event) => {
+                    const video = getVideoEventTarget(event);
+                    if (!video || video !== activeVideo) return;
 
-                    if (iframeDoc.fullscreenElement === iframeDoc.documentElement) {
-                        exitFullscreen();
-                        return;
-                    }
-
-                    if (iframeDoc.fullscreenElement || !iframeDoc.fullscreenEnabled || !iframeDoc.documentElement.requestFullscreen) {
-                        return;
-                    }
-
-                    iframeDoc.documentElement
-                        .requestFullscreen({ navigationUI: "hide" })
-                        .then(() => {
-                            fullscreenStartedByApp = iframeDoc.fullscreenElement === iframeDoc.documentElement;
-                            syncButton();
-                        })
-                        .catch((error: unknown) => {
-                            logger.warn("TwitamaModoki: メディアを全画面表示できませんでした:", error);
-                        });
+                    activeVideo = null;
+                    syncMediaViewer();
                 };
 
-                const createButton = () => {
-                    const button = iframeDoc.createElement("button");
-                    button.type = "button";
-                    button.className = BUTTON_CLASS;
-                    button.textContent = "全画面表示";
-                    button.setAttribute("aria-label", "全画面表示");
-                    button.setAttribute("aria-pressed", "false");
-                    button.addEventListener("click", handleButtonClick);
-                    return button;
+                const handleFullscreenChange = () => {
+                    if (fullscreenOwnerRef.current !== outerDoc) return;
+                    if (outerDoc.fullscreenElement !== outerDoc.documentElement) clearFullscreenState();
                 };
 
-                const syncButton = () => {
-                    const viewer = iframeDoc.querySelector<HTMLElement>(MEDIA_VIEWER_SELECTOR);
-                    const existingButtons = getButtons();
-
-                    if (!viewer) {
-                        existingButtons.forEach((button) => button.remove());
-                        exitFullscreen();
-                        return;
-                    }
-
-                    if (!iframeDoc.fullscreenEnabled || !iframeDoc.documentElement.requestFullscreen) {
-                        existingButtons.forEach((button) => button.remove());
-                        return;
-                    }
-
-                    if (!viewer.querySelector(`.${BUTTON_CLASS}`)) {
-                        existingButtons.forEach((button) => button.remove());
-                        viewer.appendChild(createButton());
-                    }
-
-                    updateFullscreenUi();
-                };
-
-                const observer = new MutationObserver(syncButton);
+                const observer = new MutationObserver(syncMediaViewer);
                 observer.observe(iframeDoc.body, { childList: true, subtree: true });
-                iframeDoc.addEventListener("fullscreenchange", updateFullscreenUi);
-                syncButton();
+                iframeDoc.addEventListener("play", handleVideoPlay, true);
+                iframeDoc.addEventListener("ended", handleVideoFinished, true);
+                iframeDoc.addEventListener("emptied", handleVideoFinished, true);
+                outerDoc.addEventListener("fullscreenchange", handleFullscreenChange);
+                syncMediaViewer();
 
                 cleanupDocument = () => {
                     observer.disconnect();
-                    iframeDoc.removeEventListener("fullscreenchange", updateFullscreenUi);
-                    getButtons().forEach((button) => button.removeEventListener("click", handleButtonClick));
-                    getButtons().forEach((button) => button.remove());
-                    exitFullscreen();
+                    iframeDoc.removeEventListener("play", handleVideoPlay, true);
+                    iframeDoc.removeEventListener("ended", handleVideoFinished, true);
+                    iframeDoc.removeEventListener("emptied", handleVideoFinished, true);
+                    outerDoc.removeEventListener("fullscreenchange", handleFullscreenChange);
+                    if (mediaDocumentRef.current === iframeDoc) exitFullscreen();
                 };
             } catch (error) {
-                logger.warn("TwitamaModoki: メディア全画面ボタンを初期化できませんでした:", error);
+                logger.warn("TwitamaModoki: メディアビューアーを監視できませんでした:", error);
             }
         };
 
@@ -136,6 +158,14 @@ export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null
         return () => {
             iframe.removeEventListener("load", setupDocument);
             cleanupDocument?.();
+            setIsMediaViewerOpen(false);
         };
-    }, [iframeRef]);
+    }, [clearFullscreenState, exitFullscreen, iframeRef]);
+
+    return {
+        isMediaViewerOpen,
+        isFullscreen,
+        isSupported: Boolean(document.documentElement.requestFullscreen),
+        toggleFullscreen,
+    };
 }

@@ -43,7 +43,7 @@ export function GenericColumn({ columnId, currentUrl }: GenericColumnProps) {
 
     // iframe初期化（広告非表示、カスタムCSS注入、アカウント名検出）
     useIframeInit(iframeRef, { hideAds: true });
-    useMediaFullscreen(iframeRef);
+    const mediaFullscreen = useMediaFullscreen(iframeRef);
 
     // URL変更を監視して自動保存
     const handleUrlChange = useCallback(
@@ -178,8 +178,21 @@ export function GenericColumn({ columnId, currentUrl }: GenericColumnProps) {
                     border: 0,
                 }}
                 allow="fullscreen"
+                allowFullScreen
                 title="Xページ"
             />
+
+            {mediaFullscreen.isMediaViewerOpen && mediaFullscreen.isSupported && (
+                <button
+                    type="button"
+                    className="media-fullscreen-button"
+                    aria-label={mediaFullscreen.isFullscreen ? "全画面解除" : "全画面表示"}
+                    aria-pressed={mediaFullscreen.isFullscreen}
+                    onClick={mediaFullscreen.toggleFullscreen}
+                >
+                    {mediaFullscreen.isFullscreen ? "全画面解除" : "全画面表示"}
+                </button>
+            )}
 
             {/* フローティングスクロールボタン */}
             {(() => {
