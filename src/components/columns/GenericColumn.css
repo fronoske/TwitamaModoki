@@ -23,8 +23,7 @@
 .media-fullscreen-button:hover,
 .media-fullscreen-button:focus-visible {
   background: rgba(39, 44, 48, 0.95);
-  outline: 2px solid #1d9bf0;
-  outline-offset: 2px;
+  outline: none;
 }
 
 body.twitama-media-fullscreen .rate-limit-panel,

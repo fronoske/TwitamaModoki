@@ -178,11 +178,12 @@ export function GenericColumn({ columnId, currentUrl }: GenericColumnProps) {
                     border: 0,
                 }}
                 allow="fullscreen"
-                allowFullScreen
                 title="Xページ"
             />
 
-            {mediaFullscreen.isMediaViewerOpen && mediaFullscreen.isSupported && (
+            {mediaFullscreen.isMediaViewerOpen &&
+                mediaFullscreen.isSupported &&
+                (!mediaFullscreen.isFullscreen || mediaFullscreen.isFullscreenControlVisible) && (
                 <button
                     type="button"
                     className="media-fullscreen-button"

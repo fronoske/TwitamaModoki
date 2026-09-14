@@ -3,6 +3,7 @@ import { IMAGE_MODAL_SELECTOR } from "@/config/xSelectors";
 import { logger } from "@/utils/logger";
 
 const FULLSCREEN_BODY_CLASS = "twitama-media-fullscreen";
+const FULLSCREEN_CONTROL_HIDE_DELAY = 3000;
 const MEDIA_ROUTE_PATTERN = /\/status\/\d+\/(?:photo|video)\/\d+/;
 
 function hasExpandedMedia(iframeDoc: Document): boolean {
@@ -25,8 +26,28 @@ function getVideoEventTarget(event: Event): HTMLVideoElement | null {
 export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null>) {
     const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isFullscreenControlVisible, setIsFullscreenControlVisible] = useState(true);
     const fullscreenOwnerRef = useRef<Document | null>(null);
     const mediaDocumentRef = useRef<Document | null>(null);
+    const controlHideTimeoutRef = useRef<number | null>(null);
+
+    const clearControlHideTimer = useCallback(() => {
+        if (controlHideTimeoutRef.current === null) return;
+
+        window.clearTimeout(controlHideTimeoutRef.current);
+        controlHideTimeoutRef.current = null;
+    }, []);
+
+    const showFullscreenControlTemporarily = useCallback(() => {
+        if (!fullscreenOwnerRef.current) return;
+
+        clearControlHideTimer();
+        setIsFullscreenControlVisible(true);
+        controlHideTimeoutRef.current = window.setTimeout(() => {
+            controlHideTimeoutRef.current = null;
+            setIsFullscreenControlVisible(false);
+        }, FULLSCREEN_CONTROL_HIDE_DELAY);
+    }, [clearControlHideTimer]);
 
     const clearFullscreenState = useCallback(() => {
         const outerDoc = fullscreenOwnerRef.current;
@@ -34,10 +55,12 @@ export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null
 
         fullscreenOwnerRef.current = null;
         mediaDocumentRef.current = null;
+        clearControlHideTimer();
         outerDoc?.body.classList.remove(FULLSCREEN_BODY_CLASS);
         mediaDoc?.body.classList.remove(FULLSCREEN_BODY_CLASS);
         setIsFullscreen(false);
-    }, []);
+        setIsFullscreenControlVisible(true);
+    }, [clearControlHideTimer]);
 
     const exitFullscreen = useCallback(() => {
         const outerDoc = fullscreenOwnerRef.current;
@@ -76,11 +99,12 @@ export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null
                 outerDoc.body.classList.add(FULLSCREEN_BODY_CLASS);
                 iframeDoc.body.classList.add(FULLSCREEN_BODY_CLASS);
                 setIsFullscreen(true);
+                showFullscreenControlTemporarily();
             })
             .catch((error: unknown) => {
                 logger.warn("TwitamaModoki: メディアを全画面表示できませんでした:", error);
             });
-    }, [exitFullscreen, iframeRef]);
+    }, [exitFullscreen, iframeRef, showFullscreenControlTemporarily]);
 
     useEffect(() => {
         const iframe = iframeRef.current;
@@ -136,6 +160,12 @@ export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null
                 iframeDoc.addEventListener("play", handleVideoPlay, true);
                 iframeDoc.addEventListener("ended", handleVideoFinished, true);
                 iframeDoc.addEventListener("emptied", handleVideoFinished, true);
+                iframeDoc.addEventListener("pointerdown", showFullscreenControlTemporarily, true);
+                iframeDoc.addEventListener("pointermove", showFullscreenControlTemporarily, true);
+                iframeDoc.addEventListener("keydown", showFullscreenControlTemporarily, true);
+                outerDoc.addEventListener("pointerdown", showFullscreenControlTemporarily, true);
+                outerDoc.addEventListener("pointermove", showFullscreenControlTemporarily, true);
+                outerDoc.addEventListener("keydown", showFullscreenControlTemporarily, true);
                 outerDoc.addEventListener("fullscreenchange", handleFullscreenChange);
                 syncMediaViewer();
 
@@ -144,6 +174,12 @@ export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null
                     iframeDoc.removeEventListener("play", handleVideoPlay, true);
                     iframeDoc.removeEventListener("ended", handleVideoFinished, true);
                     iframeDoc.removeEventListener("emptied", handleVideoFinished, true);
+                    iframeDoc.removeEventListener("pointerdown", showFullscreenControlTemporarily, true);
+                    iframeDoc.removeEventListener("pointermove", showFullscreenControlTemporarily, true);
+                    iframeDoc.removeEventListener("keydown", showFullscreenControlTemporarily, true);
+                    outerDoc.removeEventListener("pointerdown", showFullscreenControlTemporarily, true);
+                    outerDoc.removeEventListener("pointermove", showFullscreenControlTemporarily, true);
+                    outerDoc.removeEventListener("keydown", showFullscreenControlTemporarily, true);
                     outerDoc.removeEventListener("fullscreenchange", handleFullscreenChange);
                     if (mediaDocumentRef.current === iframeDoc) exitFullscreen();
                 };
@@ -158,13 +194,15 @@ export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null
         return () => {
             iframe.removeEventListener("load", setupDocument);
             cleanupDocument?.();
+            clearControlHideTimer();
             setIsMediaViewerOpen(false);
         };
-    }, [clearFullscreenState, exitFullscreen, iframeRef]);
+    }, [clearControlHideTimer, clearFullscreenState, exitFullscreen, iframeRef, showFullscreenControlTemporarily]);
 
     return {
         isMediaViewerOpen,
         isFullscreen,
+        isFullscreenControlVisible,
         isSupported: Boolean(document.documentElement.requestFullscreen),
         toggleFullscreen,
     };
