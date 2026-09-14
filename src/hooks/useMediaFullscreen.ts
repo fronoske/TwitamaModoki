@@ -20,6 +20,14 @@ function getVideoEventTarget(event: Event): HTMLVideoElement | null {
     return target?.tagName === "VIDEO" ? (target as HTMLVideoElement) : null;
 }
 
+function isVideoVisible(video: HTMLVideoElement): boolean {
+    const view = video.ownerDocument.defaultView;
+    if (!view) return false;
+
+    const rect = video.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.right > 0 && rect.top < view.innerHeight && rect.left < view.innerWidth;
+}
+
 /**
  * X の画像・動画ビューアーを監視し、トップページの全画面表示を制御する。
  */
@@ -120,14 +128,24 @@ export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null
                 const iframeDoc = iframe.contentWindow?.document;
                 if (!iframeDoc?.body) return;
 
-                let activeVideo = Array.from(iframeDoc.querySelectorAll<HTMLVideoElement>("video")).find((video) => !video.paused && !video.ended) ?? null;
+                const iframeWindow = iframeDoc.defaultView;
+                let activeVideo =
+                    Array.from(iframeDoc.querySelectorAll<HTMLVideoElement>("video")).find(
+                        (video) => !video.paused && !video.ended && isVideoVisible(video),
+                    ) ?? null;
+                let activeVideoPathname = activeVideo ? iframeDoc.location.pathname : null;
 
                 const syncMediaViewer = () => {
-                    const playingVideo = Array.from(iframeDoc.querySelectorAll<HTMLVideoElement>("video")).find(
-                        (video) => !video.paused && !video.ended,
-                    );
-                    if (playingVideo) activeVideo = playingVideo;
-                    if (activeVideo && (!activeVideo.isConnected || activeVideo.ended)) activeVideo = null;
+                    if (
+                        activeVideo &&
+                        (!activeVideo.isConnected ||
+                            activeVideo.ended ||
+                            activeVideoPathname !== iframeDoc.location.pathname ||
+                            !isVideoVisible(activeVideo))
+                    ) {
+                        activeVideo = null;
+                        activeVideoPathname = null;
+                    }
 
                     const isOpen = hasExpandedMedia(iframeDoc) || activeVideo !== null;
                     setIsMediaViewerOpen(isOpen);
@@ -139,6 +157,7 @@ export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null
                     if (!video) return;
 
                     activeVideo = video;
+                    activeVideoPathname = iframeDoc.location.pathname;
                     syncMediaViewer();
                 };
 
@@ -147,6 +166,7 @@ export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null
                     if (!video || video !== activeVideo) return;
 
                     activeVideo = null;
+                    activeVideoPathname = null;
                     syncMediaViewer();
                 };
 
@@ -160,6 +180,7 @@ export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null
                 iframeDoc.addEventListener("play", handleVideoPlay, true);
                 iframeDoc.addEventListener("ended", handleVideoFinished, true);
                 iframeDoc.addEventListener("emptied", handleVideoFinished, true);
+                iframeDoc.addEventListener("scroll", syncMediaViewer, true);
                 iframeDoc.addEventListener("pointerdown", showFullscreenControlTemporarily, true);
                 iframeDoc.addEventListener("pointermove", showFullscreenControlTemporarily, true);
                 iframeDoc.addEventListener("keydown", showFullscreenControlTemporarily, true);
@@ -167,6 +188,8 @@ export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null
                 outerDoc.addEventListener("pointermove", showFullscreenControlTemporarily, true);
                 outerDoc.addEventListener("keydown", showFullscreenControlTemporarily, true);
                 outerDoc.addEventListener("fullscreenchange", handleFullscreenChange);
+                iframeWindow?.addEventListener("popstate", syncMediaViewer);
+                iframeWindow?.addEventListener("hashchange", syncMediaViewer);
                 syncMediaViewer();
 
                 cleanupDocument = () => {
@@ -174,6 +197,7 @@ export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null
                     iframeDoc.removeEventListener("play", handleVideoPlay, true);
                     iframeDoc.removeEventListener("ended", handleVideoFinished, true);
                     iframeDoc.removeEventListener("emptied", handleVideoFinished, true);
+                    iframeDoc.removeEventListener("scroll", syncMediaViewer, true);
                     iframeDoc.removeEventListener("pointerdown", showFullscreenControlTemporarily, true);
                     iframeDoc.removeEventListener("pointermove", showFullscreenControlTemporarily, true);
                     iframeDoc.removeEventListener("keydown", showFullscreenControlTemporarily, true);
@@ -181,6 +205,8 @@ export function useMediaFullscreen(iframeRef: RefObject<HTMLIFrameElement | null
                     outerDoc.removeEventListener("pointermove", showFullscreenControlTemporarily, true);
                     outerDoc.removeEventListener("keydown", showFullscreenControlTemporarily, true);
                     outerDoc.removeEventListener("fullscreenchange", handleFullscreenChange);
+                    iframeWindow?.removeEventListener("popstate", syncMediaViewer);
+                    iframeWindow?.removeEventListener("hashchange", syncMediaViewer);
                     if (mediaDocumentRef.current === iframeDoc) exitFullscreen();
                 };
             } catch (error) {
